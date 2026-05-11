@@ -28,7 +28,6 @@
             text-align: center; width: 80%; max-width: 400px;
         }
 
-        /* УПРАВЛЕНИЕ: Джойстик СЛЕВА, Свет СПРАВА */
         #joystick-container { 
             position: fixed; bottom: 40px; left: 40px; 
             width: 150px; height: 150px; z-index: 60; 
@@ -92,17 +91,22 @@
     <div id="joystick-container"></div>
     <button id="flashlight-btn" onclick="toggleFlashlight()">СВЕТ</button>
 
-    <script src="/socket.io/socket.io.js"></script>
+    <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/nipplejs/0.9.0/nipplejs.min.js"></script>
 
     <script>
-        const socket = io(https://arlan-server.onrender.com);
+        // ИСПРАВЛЕНО: Добавлены кавычки для ссылки
+        const socket = io("https://arlan-server.onrender.com");
+        
         let scene, camera, renderer, flashLightObj, worldModel = null;
         let myRoom = null, isHost = false, currentNight = 1, gameActive = false;
         let otherPlayers = {}, moveVector = { x: 0, z: 0 };
         const raycaster = new THREE.Raycaster();
+
+        // Проверка ошибок для тебя (выведет в консоль если сервер спит)
+        socket.on('connect_error', (err) => { console.log("Ожидание пробуждения сервера..."); });
 
         function openCreate() { document.getElementById('create-box').style.display = 'block'; }
         function openBrowser() { document.getElementById('browser-box').style.display = 'block'; socket.emit('get_rooms'); }
@@ -148,15 +152,15 @@
             const amb = new THREE.AmbientLight(0x404040, 0.1);
             scene.add(amb);
 
-            // ФОНАРИК: Поднят выше и светит прямо перед глазами
             flashLightObj = new THREE.SpotLight(0xffffff, 0, 12, Math.PI/7, 0.5);
-            flashLightObj.position.set(0, 0.2, 0); // Чуть выше камеры
+            flashLightObj.position.set(0, 0.2, 0); 
             camera.add(flashLightObj);
-            flashLightObj.target.position.set(0, 0.2, -1); // Светит чуть выше горизонта
+            flashLightObj.target.position.set(0, 0.2, -1); 
             camera.add(flashLightObj.target);
             scene.add(camera);
 
             const loader = new THREE.GLTFLoader();
+            // Твоя ссылка на модель
             loader.load('https://docs.google.com/uc?export=download&id=1Wqznnc8JOy-QwVltsDxo7PcueeggOTSl', (gltf) => { 
                 worldModel = gltf.scene;
                 scene.add(worldModel); 
@@ -214,7 +218,6 @@
             const intersects = raycaster.intersectObjects(worldModel.children, true);
             
             if (intersects.length > 0 && intersects[0].distance < 0.6) {
-                // ПРОВЕРКА НА ДВЕРЬ: если в имени объекта есть "door" или "дверь", коллизии нет
                 const objName = intersects[0].object.name.toLowerCase();
                 if (objName.includes('door') || objName.includes('дверь')) {
                     return false;
